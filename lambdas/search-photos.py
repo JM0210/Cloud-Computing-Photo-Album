@@ -6,7 +6,7 @@ import os  # 1. Import os to read environment variables
 
 http = urllib3.PoolManager()
 lex_client = boto3.client('lexv2-runtime')
-
+# Test for CI/CD
 def lambda_handler(event, context):
     print("Received Lex event:", json.dumps(event))
     
