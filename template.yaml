@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Photo Album Application - Requirement 7. This template creates S3 buckets,
+  Lambdas, and API Gateway.
+
+Resources:
+  # -----------------------------------------------------------------
+  # 1. S3 Buckets
+  # -----------------------------------------------------------------
+  # Bucket for storing uploaded photos
+  PhotoStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-photos-storage
+
+  # Bucket for hosting the Frontend website (Requirement 7b)
+  FrontendWebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-frontend-site
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  # -----------------------------------------------------------------
+  # 2. Lambda Functions
+  # -----------------------------------------------------------------
+  # Index Photos Lambda (Triggered by S3)
+  IndexPhotosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/
+      Handler: index-photos.lambda_handler
+      Runtime: python3.9
+      Policies:
+        - AmazonS3ReadOnlyAccess
+        - AmazonRekognitionReadOnlyAccess
+        - AmazonOpenSearchServiceFullAccess
+      Events:
+        S3UploadEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref PhotoStorageBucket
+            Events: s3:ObjectCreated:*
+
+  # Search Photos Lambda (Connected to API Gateway)
+  SearchPhotosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/
+      Handler: search-photos.lambda_handler
+      Runtime: python3.9
+      Policies:
+        - AmazonOpenSearchServiceReadOnlyAccess
+      Events:
+        SearchApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PhotoAlbumAPI
+            Path: /search
+            Method: get
+
+  # -----------------------------------------------------------------
+  # 3. API Gateway 
+  # -----------------------------------------------------------------
+  PhotoAlbumAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: v1
+      # Note: This is a basic setup. You can add API Key requirements here if needed.
+      Cors:
+        AllowMethods: "'GET,POST,PUT,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-api-key'"
+        AllowOrigin: "'*'"
+
+# -----------------------------------------------------------------
+# 4. Outputs
+# -----------------------------------------------------------------
+Outputs:
+  FrontendURL:
+    Description: "The public URL of your photo album website"
+    Value: !GetAtt FrontendWebsiteBucket.WebsiteURL
+  APIEndpoint:
+    Description: "The base URL of your API"
+    Value: !Sub "https://${PhotoAlbumAPI}.execute-api.${AWS::Region}.amazonaws.com/v1/"
