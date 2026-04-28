@@ -5,7 +5,7 @@ import urllib3
 import base64
 import urllib
 import os 
-# test
+# Test for CI/CD
 s3 = boto3.client('s3')
 rekognition = boto3.client('rekognition')
 http = urllib3.PoolManager()
