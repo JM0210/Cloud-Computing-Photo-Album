@@ -19,7 +19,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${AWS::StackName}-frontend-site
-      AccessControl: PublicRead
+      PublicReadAccessEnabled: True
       WebsiteConfiguration:
         IndexDocument: index.html
 
